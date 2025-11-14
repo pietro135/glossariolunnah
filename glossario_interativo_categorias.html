@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Glossário Interativo — Categorias</title>
+  <style>
+    :root{
+      --bg:#0f1724; --card:#0b1220; --muted:#9aa4b2; --accent:#6ee7b7; --glass:rgba(255,255,255,0.03);
+      --radius:14px; --pad:18px; --maxw:1100px; --shadow: 0 8px 30px rgba(2,6,23,0.6);
+      --transition: 350ms cubic-bezier(.2,.9,.3,1);
+    }
+    *{box-sizing:border-box}
+    body{font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial; margin:0; background:linear-gradient(180deg,#021226 0%, #081425 60%); color:#e6eef6; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;}
+    .wrap{max-width:var(--maxw); margin:36px auto; padding:24px;}
+    header{display:flex;gap:20px;align-items:center;margin-bottom:18px}
+    .brand{display:flex;flex-direction:column}
+    h1{margin:0;font-size:20px}
+    p.lead{margin:4px 0 0;color:var(--muted);font-size:13px}
+
+    .grid{display:grid;grid-template-columns:360px 1fr;gap:20px}
+
+    /* sidebar categories */
+    .sidebar{background:var(--card); border-radius:var(--radius); padding:12px; box-shadow:var(--shadow);}
+    .cat{list-style:none;margin:0;padding:6px;}
+    .cat-item{display:flex;align-items:center;justify-content:space-between;padding:10px;border-radius:10px;cursor:pointer;user-select:none;transition:background var(--transition);}
+    .cat-item:hover{background:var(--glass)}
+    .cat-item.active{background:linear-gradient(90deg, rgba(110,231,183,0.08), rgba(102,126,234,0.03));border:1px solid rgba(110,231,183,0.06)}
+    .cat-title{display:flex;gap:10px;align-items:center}
+    .count{font-size:12px;color:var(--muted)}
+
+    /* subterms list */
+    .subwrap{margin-top:10px;padding-left:6px}
+    .sublist{list-style:none;margin:0;padding:0;overflow:hidden;transition:height var(--transition),opacity var(--transition);}
+    .sub-item{padding:8px 10px;border-radius:8px;margin-bottom:6px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:transform var(--transition), background var(--transition)}
+    .sub-item:hover{transform:translateX(6px);background:rgba(255,255,255,0.02)}
+
+    /* content card */
+    .content{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); padding:22px; border-radius:var(--radius); box-shadow:var(--shadow); min-height:400px}
+    .term-title{display:flex;align-items:center;gap:12px}
+    .term-title h2{margin:0;font-size:20px}
+    .term-meta{color:var(--muted);font-size:13px;margin-top:6px}
+    .term-body{margin-top:18px;line-height:1.6;color:#dbeaf2}
+    .term-section{margin-top:14px}
+    .example{background:rgba(255,255,255,0.02);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.02)}
+
+    /* small screens */
+    @media(max-width:880px){
+      .grid{grid-template-columns:1fr;}
+      .sidebar{order:2}
+      .content{order:1}
+    }
+
+    /* small helpers */
+    .muted{color:var(--muted)}
+    .pill{font-size:12px;padding:6px 8px;border-radius:999px;background:rgba(255,255,255,0.02)}
+
+    /* chevron */
+    .chev{transition:transform var(--transition);}
+    .rotate{transform:rotate(90deg)}
+
+    /* subtle animation when loading content */
+    .fade-in{animation:fadeIn 260ms ease both}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <h1>Glossário por Categorias</h1>
+        <p class="lead">Clique em uma categoria para ver subtermos. Depois clique em um subtermo para ver explicações aprofundadas. Sem busca — navegação apenas por clique.</p>
+      </div>
+    </header>
+
+    <main class="grid">
+      <aside class="sidebar" aria-label="Categorias">
+        <ul id="categories" class="cat"></ul>
+      </aside>
+
+      <section class="content" id="content" tabindex="0">
+        <div id="empty" class="fade-in">
+          <div class="term-title">
+            <h2>Selecione uma categoria e um subtermo</h2>
+            <span class="pill muted">Navegação por clique</span>
+          </div>
+          <p class="term-meta">Sem barra de pesquisa. Explore por categorias à esquerda.</p>
+          <div class="term-body">
+            Clique em uma categoria para ver os tópicos relacionados e, em seguida, clique em um subtermo para ver uma explicação completa e exemplos práticos.
+          </div>
+        </div>
+        <article id="termCard" style="display:none"></article>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    // Dados do glossário (categorias -> subtermos -> conteúdo detalhado)
+    const DATA = [
+      {
+        id: 'filosofia', title: 'Filosofia', description: 'Termos centrais da filosofia ocidental e suas ramificações.',
+        terms: [
+          {id:'metafisica', title:'Metafísica', summary:'Estudo do ser, da existência e da realidade última.', content:`<p>A metafísica investiga questões fundamentais como: O que existe? Qual a natureza da realidade? É o ramo da filosofia que busca compreender aquilo que transcende as explicações empíricas imediatas — aquilo que está "por trás" dos fenômenos.</p>
+          <div class="term-section"><strong>Abordagens:</strong>
+            <ul>
+              <li><strong>Realismo metafísico:</strong> afirma que existe uma realidade objetiva independente da mente.</li>
+              <li><strong>Idealismo:</strong> sustenta que a realidade é, em última instância, mental ou constituída por percepções.</li>
+            </ul>
+          </div>
+          <div class="term-section"><strong>Exemplo prático:</strong>
+            <div class="example">Debates sobre se propriedades universais (como 'vermelhidão') existem independentemente dos objetos particulares.</div>
+          </div>
+          <div class="term-section"><strong>Contexto histórico:</strong> Platão e Aristóteles estabeleceram fundações diferentes — Platão com o mundo das ideias; Aristóteles com substância e categorias.</div>`},
+          {id:'epistemologia', title:'Epistemologia', summary:'Teoria do conhecimento: fontes, limites e validade do saber.', content:`<p>A epistemologia estuda como sabemos o que sabemos — examina crença, justificação e verdade. Questões centrais: o que justifica uma crença? Quais são as fontes confiáveis do conhecimento (percepção, razão, intuição, testemunho)?</p>
+            <div class="term-section"><strong>Problemas clássicos:</strong>
+              <ul>
+                <li><strong>Ceticismo:</strong> dúvida sistemática sobre a possibilidade de conhecimento certeiro.</li>
+                <li><strong>Fundacionalismo vs Coerentismo:</strong> teorias sobre como as crenças são justificadas.</li>
+              </ul>
+            </div>
+            <div class="term-section"><strong>Aplicação:</strong> em ciência, a epistemologia ajuda a determinar métodos e limites — por exemplo, distinguir entre hipóteses bem suportadas e simples conjecturas.</div>`},
+          {id:'etica', title:'Ética', summary:'Reflexão sobre o certo e o errado, deveres e virtudes.', content:`<p>A ética trata de princípios morais que orientam ações humanas. Divide-se em várias teorias normativas — utilitarismo (maximizar bem-estar), deontologia (regras e deveres), ética das virtudes (caráter e virtudes).</p>
+            <div class="term-section"><strong>Exemplo:</strong>
+              <div class="example">Um dilema clássico: o "trolley problem" explora conflitos entre consequências e regras morais.</div>
+            </div>
+            <div class="term-section"><strong>Observação prática:</strong> ética aplicada aborda problemas contemporâneos: bioética, ética em IA, ética empresarial.</div>`},
+          {id:'fenomenologia', title:'Fenomenologia', summary:'Estudo da experiência consciente tal como vivida.', content:`<p>Fenomenologia (Husserl, Merleau-Ponty) analisa a estrutura da experiência subjetiva sem pressuposições teóricas. Busca descrever como os fenômenos aparecem à consciência.</p>
+            <div class="term-section"><strong>Contribuição:</strong> enfatiza a descrição minuciosa da percepção e intencionalidade (a consciência sempre de algo).</div>
+            <div class="term-section"><strong>Uso:</strong> útil em filosofia da mente, psicologia qualitativa e estudos de percepção.</div>`},
+          {id:'analiticavscontinental', title:'Analítico vs Continental', summary:'Principais tradições filosóficas do século XX.', content:`<p>Representam duas linhas de estilo: a tradição analítica foca na clareza conceitual e lógica; a continental concentra-se em questões históricas, culturais e existenciais. A divisão é esquemática, mas útil para entender debates modernos.</p>
+            <div class="term-section"><strong>Contexto:</strong> Filósofos como Wittgenstein e Russell estão na tradição analítica; Heidegger e Sartre na continental.</div>`}
+        ]
+      },
+
+      {
+        id:'computacao', title: 'Computação', description: 'Conceitos essenciais de ciência da computação e programação.',
+        terms: [
+          {id:'algoritmo', title:'Algoritmo', summary:'Conjunto finito de passos para resolver um problema.', content:`<p>Algoritmo é uma sequência bem definida de instruções que transforma entradas em saídas. Para ser considerado algoritmo, a sequência deve ser finita, determinística (ou ter uma descrição probabilística clara) e executável.</p>
+            <div class="term-section"><strong>Propriedades importantes:</strong>
+              <ul>
+                <li><strong>Corretude:</strong> produz o resultado esperado para todos os casos válidos.</li>
+                <li><strong>Complexidade:</strong> mede recursos (tempo e espaço) usados durante a execução.</li>
+              </ul>
+            </div>
+            <div class="term-section"><strong>Exemplo:</strong>
+              <div class="example">Algoritmos de ordenação (bubble sort, quicksort) têm diferenças marcantes em complexidade média e pior caso.</div>
+            </div>`},
+          {id:'estruturaDados', title:'Estrutura de Dados', summary:'Formas organizadas de armazenar dados para acesso eficiente.', content:`<p>Estruturas de dados (listas, filas, pilhas, árvores, grafos, tabelas de dispersão) definem como dados são organizados e acessados. A escolha afeta diretamente a eficiência de algoritmos.</p>
+            <div class="term-section"><strong>Considerações:</strong> uso de memória, tempo de busca, inserção e exclusão, e casos de uso práticos (por exemplo, filas em escalonamento de tarefas).</div>`},
+          {id:'paradigmas', title:'Paradigmas de Programação', summary:'Estilos de programação e seus modelos mentais.', content:`<p>Paradigmas como imperativo, funcional, orientado a objetos e lógico influenciam como pensamos sobre soluções e estruturas de software.</p>
+            <div class="term-section"><strong>Exemplo prático:</strong> programação funcional prioriza funções puras e imutabilidade; OO usa objetos e encapsulamento.</div>`},
+          {id:'complexidade', title:'Complexidade de Algoritmos', summary:'Classe de complexidade temporal e espacial.', content:`<p>Analisa quantos recursos um algoritmo consome em função do tamanho da entrada (n). Notação Big-O descreve limites superiores: O(1), O(log n), O(n), O(n log n), O(n^2), etc.</p>
+            <div class="term-section"><strong>Implicações:</strong> entender complexidade ajuda a escolher abordagens que escalem com dados grandes.</div>`},
+          {id:'redes', title:'Redes de Computadores', summary:'Conceitos de comunicação entre máquinas.', content:`<p>Engloba camadas (modelo OSI/TCP-IP), protocolos (TCP, UDP, HTTP), roteamento, endereçamento (IP) e segurança de rede. Trata-se de como máquinas trocam dados e como garantir confiabilidade e performance.</p>
+            <div class="term-section"><strong>Aplicação:</strong> arquiteturas web, streaming, e sistemas distribuídos dependem profundamente desses conceitos.</div>`}
+        ]
+      },
+
+      {
+        id:'biologia', title:'Biologia', description: 'Conceitos de biologia fundamental para estudos escolares e iniciais de ciência da vida.',
+        terms: [
+          {id:'dna', title:'DNA', summary:'Molécula que carrega informação genética.', content:`<p>DNA (ácido desoxirribonucleico) é uma molécula de dupla hélice composta por nucleotídeos (A, T, C, G). Carrega instruções para síntese de proteínas e transmite informação hereditária.</p>
+            <div class="term-section"><strong>Processos importantes:</strong>
+              <ul>
+                <li><strong>Replicação:</strong> cópia do DNA antes da divisão celular.</li>
+                <li><strong>Transcrição e tradução:</strong> passos para converter informação em proteínas.</li>
+              </ul>
+            </div>
+            <div class="term-section"><strong>Exemplo:</strong> mutações em genes podem afetar traços e causar doenças genéticas ou variações adaptativas.</div>`},
+          {id:'homeostase', title:'Homeostase', summary:'Manutenção do ambiente interno estável.', content:`<p>Homeostase é a capacidade de manter condições internas estáveis (temperatura, pH, glicemia). Sistemas regulatórios (hormonal, nervoso) atuam para corrigir desvios.</p>
+            <div class="term-section"><strong>Importância:</strong> vital para sobrevivência — falhas na homeostase podem levar a doenças.</div>`},
+          {id:'evolucao', title:'Evolução', summary:'Mudança nas características de populações ao longo do tempo.', content:`<p>Evolução explica diversidade biológica por seleção natural, deriva genética, mutação e migração. Não é teleológica — não há objetivo, apenas processos que alteram frequências genéticas.</p>
+            <div class="term-section"><strong>Exemplo:</strong> resistência a antibióticos em bactérias como resultado de seleção por uso de antibióticos.</div>`},
+          {id:'bioquimica', title:'Bioquímica', summary:'Química dos processos vitais e moléculas biológicas.', content:`<p>Bioquímica estuda proteínas, carboidratos, lipídeos, ácidos nucleicos e suas reações. Entender vias metabólicas é essencial para medicina e biotecnologia.</p>
+            <div class="term-section"><strong>Aplicação:</strong> desenvolvimento de fármacos, diagnóstico e engenharia metabólica.</div>`},
+          {id:'ecologia', title:'Ecologia', summary:'Relações entre organismos e ambiente.', content:`<p>Ecologia investiga populações, comunidades, ecossistemas e biosfera — como energia e matéria fluem e como espécies interagem.</p>
+            <div class="term-section"><strong>Questões atuais:</strong> perda de biodiversidade, mudanças climáticas e serviços ecossistêmicos.</div>`}
+        ]
+      },
+
+      {
+        id:'ia', title:'Inteligência Artificial', description: 'Termos-chave em IA contemporânea e aplicações práticas.',
+        terms: [
+          {id:'ml', title:'Aprendizado de Máquina (ML)', summary:'Técnicas para que máquinas aprendam com dados.', content:`<p>ML envolve algoritmos que identificam padrões em dados para realizar previsões ou tomar decisões. Engloba aprendizado supervisionado, não supervisionado e por reforço.</p>
+            <div class="term-section"><strong>Componentes:</strong> conjuntos de dados, features, modelo, função de perda e procedimento de otimização.</div>
+            <div class="term-section"><strong>Cuidados:</strong> overfitting, viés nos dados e necessidade de validação robusta.</div>`},
+          {id:'dl', title:'Deep Learning', summary:'Redes neurais profundas para tarefas complexas.', content:`<p>Deep Learning usa redes neurais com múltiplas camadas para modelar representações ricas. Excelente em visão computacional, processamento de linguagem natural e jogabilidade.</p>
+            <div class="term-section"><strong>Requisitos:</strong> grandes volumes de dados e poder computacional; explicabilidade reduzida em comparação com modelos simples.</div>`},
+          {id:'llm', title:'Modelos de Linguagem (LLMs)', summary:'Modelos que geram e compreendem texto.', content:`<p>LLMs são redes treinadas em grandes corpora textuais para prever e gerar linguagem. Utilizados em chatbots, assistentes e ferramentas de escrita.</p>
+            <div class="term-section"><strong>Riscos:</strong> alucinações, vieses e dependência de dados de treinamento.</div>`},
+          {id:'mlops', title:'MLOps', summary:'Práticas para operacionalizar modelos de ML em produção.', content:`<p>MLOps cobre integração contínua, implantação, monitoramento e governança de modelos. Importante para transformar protótipos em sistemas confiáveis e escaláveis.</p>`},
+          {id:'ethicalia', title:'Ética em IA', summary:'Implicações sociais e diretrizes para um uso responsável.', content:`<p>Trata de privacidade, justiça, transparência e impacto social. Envolve regulamentação, auditoria de modelos e considerações sobre automação do trabalho.</p>
+            <div class="term-section"><strong>Exemplo:</strong> decisões de crédito automatizadas que reproduzem discriminações históricas nos dados.</div>`}
+        ]
+      }
+    ];
+
+    // montar sidebar
+    const catsEl = document.getElementById('categories');
+    const termCard = document.getElementById('termCard');
+    const empty = document.getElementById('empty');
+
+    DATA.forEach(cat =>{
+      const li = document.createElement('li');
+      li.className = 'cat-item';
+      li.tabIndex = 0;
+      li.dataset.cat = cat.id;
+
+      const left = document.createElement('div');
+      left.className = 'cat-title';
+      left.innerHTML = `<strong>${cat.title}</strong><span class="muted">${cat.description||''}</span>`;
+
+      const right = document.createElement('div');
+      right.innerHTML = `<span class="count">${cat.terms.length} tópicos</span> <span class="chev">▶</span>`;
+
+      li.appendChild(left);
+      li.appendChild(right);
+
+      // container para subtermos (inseriremos depois)
+      const subwrap = document.createElement('div');
+      subwrap.className='subwrap';
+
+      const sublist = document.createElement('ul');
+      sublist.className='sublist';
+      sublist.style.height='0px';
+      sublist.style.opacity='0';
+
+      cat.terms.forEach(term=>{
+        const sub = document.createElement('li');
+        sub.className='sub-item';
+        sub.tabIndex=0;
+        sub.dataset.term = term.id;
+        sub.dataset.cat = cat.id;
+        sub.innerHTML = `<div><strong>${term.title}</strong><div class="muted" style="font-size:12px;margin-top:4px">${term.summary}</div></div><div class="muted">›</div>`;
+        sub.addEventListener('click', ()=>{openTerm(cat.id, term.id)});
+        sub.addEventListener('keydown', (e)=>{ if(e.key==='Enter') openTerm(cat.id, term.id) });
+        sublist.appendChild(sub);
+      });
+
+      subwrap.appendChild(sublist);
+
+      // alternar abertura
+      let opened=false;
+      const chevron = right.querySelector('.chev');
+      li.addEventListener('click', (e)=>{
+        // prevent bubbling when clicking subitems
+        if(e.target.closest('.sub-item')) return;
+        opened = !opened;
+        document.querySelectorAll('.cat-item').forEach(x=>x.classList.remove('active'));
+        if(opened){
+          li.classList.add('active');
+          openSublist(sublist);
+          chevron.classList.add('rotate');
+        } else {
+          li.classList.remove('active');
+          closeSublist(sublist);
+          chevron.classList.remove('rotate');
+        }
+      });
+
+      // keyboard support for category
+      li.addEventListener('keydown', (e)=>{ if(e.key==='Enter') li.click() });
+
+      const wrapper = document.createElement('div');
+      wrapper.appendChild(li);
+      wrapper.appendChild(subwrap);
+      catsEl.appendChild(wrapper);
+
+    });
+
+    function openSublist(el){
+      el.style.display='block';
+      const h = Array.from(el.children).reduce((acc,li)=>acc + li.offsetHeight + 6, 0);
+      el.style.height = h + 'px';
+      el.style.opacity = '1';
+    }
+    function closeSublist(el){
+      el.style.height='0px';
+      el.style.opacity='0';
+      setTimeout(()=>el.style.display='none', 360);
+    }
+
+    function openTerm(catId, termId){
+      const cat = DATA.find(c=>c.id===catId);
+      const term = cat.terms.find(t=>t.id===termId);
+      // construir card
+      termCard.innerHTML = `
+        <div class="term-title">
+          <div style="display:flex;flex-direction:column">
+            <h2>${term.title}</h2>
+            <div class="term-meta">Categoria: <strong>${cat.title}</strong> • ${term.summary}</div>
+          </div>
+        </div>
+        <div class="term-body fade-in">${term.content}
+          <div class="term-section"><strong>Relação com outros termos:</strong>
+            <ul class="muted">
+              ${relatedItems(catId, termId).map(r=>`<li>${r}</li>`).join('')}
+            </ul>
+          </div>
+        </div>
+      `;
+      empty.style.display='none';
+      termCard.style.display='block';
+      termCard.focus();
+    }
+
+    function relatedItems(catId, termId){
+      // simples heurística: listar outros termos da mesma categoria e uma recomendação externa
+      const cat = DATA.find(c=>c.id===catId);
+      const others = cat.terms.filter(t=>t.id!==termId).slice(0,4).map(t=>t.title);
+      return [...others, 'Ver termos em outras categorias para contexto interdisciplinar.'];
+    }
+
+    // accessibility: close opened sublists when click outside
+    document.addEventListener('click', (e)=>{
+      if(!e.target.closest('.sidebar')){
+        document.querySelectorAll('.sublist').forEach(sl=>{ closeSublist(sl); sl.parentNode.querySelector('.cat-item')?.classList.remove('active'); sl.parentNode.querySelector('.chev')?.classList.remove('rotate'); });
+      }
+    });
+
+    // initial small animation
+    document.addEventListener('DOMContentLoaded', ()=>{
+      setTimeout(()=>document.getElementById('categories').firstChild?.querySelector('.cat-item')?.classList.add('pulse'), 200);
+    });
+  </script>
+</body>
+</html>
